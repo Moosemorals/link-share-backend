@@ -72,8 +72,7 @@ public final class Backend extends HttpServlet {
     private String buildEvent(Link link) {
         StringBuilder message = new StringBuilder();
 
-        message.append("id: ").append(link.getId()).append("\n");
-        message.append("data: ").append(link.getLink()).append("\n");
+        message.append("data: ").append(link.toJson().toString()).append("\n");
         message.append("\n\n");
 
         return message.toString();

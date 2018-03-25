@@ -25,8 +25,11 @@ public final class Submit extends HttpServlet{
 	        return;
         }
 
+        // description is optional
+        String description = req.getParameter("d");
+
         log.info("{}: New link: {}", req.getRemoteAddr(), link);
-        LinkManager.getInstance().createLink(link);
+        LinkManager.getInstance().createLink(link, description);
 
 	    resp.setStatus(HttpServletResponse.SC_NO_CONTENT);
     }

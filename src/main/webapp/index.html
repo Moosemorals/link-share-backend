@@ -2,13 +2,27 @@
 <body>
 <h2>Link sharing</h2>
 
-<form method="POST" action="submit">
-    <p>What's the link you want to share?</p>
-    <p><input type="url" name="l"></p>
-    <p><button type="submit">Submit link</button></p>
-
+<form method="POST" action="submit" id="form">
+    <p>Link: <input type="url" name="l" required id="linkInput"></p>
+    <p>Optional description: </p>
+    <textarea cols="80" rows="3" name="d"></textarea>
+    <p>
+        <button type="submit">Submit link</button>
+    </p>
 </form>
 
+<table>
+    <thead>
+    <tr>
+        <th>Date added</th>
+        <th>Link</th>
+        <th>Description</th>
+    </tr>
+    </thead>
+    <tbody id="links">
+
+    </tbody>
+</table>
 <script defer src="links.js"></script>
 </body>
 </html>

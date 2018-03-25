@@ -1,0 +1,97 @@
+package com.moosemorals.linkshare;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+final class EventPlexer {
+    private final Logger log = LoggerFactory.getLogger(EventPlexer.class);
+    private final static EventPlexer INSTANCE = new EventPlexer();
+
+    static EventPlexer getInstance() {
+        return INSTANCE;
+    }
+
+    private final LinkedList<Link> queue;
+    private final Set<PlexerListener> listeners = new HashSet<>();
+    private final AtomicBoolean running = new AtomicBoolean(false);
+    private final Runnable queueWatcher = new Runnable() {
+        @Override
+        public void run() {
+            while (running.get() && !Thread.interrupted()) {
+                Link next;
+                synchronized (queue) {
+                    while (queue.isEmpty()) {
+                        try {
+                            queue.wait();
+                        } catch (InterruptedException ex) {
+                            return;
+                        }
+                    }
+                    next = queue.removeFirst();
+                }
+
+                notifyListeners(next);
+            }
+        }
+    };
+    private Thread watcherThread;
+
+    private EventPlexer() {
+        queue = new LinkedList<>();
+    }
+
+    void addListener(PlexerListener l) {
+        log.debug("Adding listener {}", l);
+        synchronized (listeners) {
+            listeners.add(l);
+        }
+    }
+
+    void removeListener(PlexerListener l) {
+        log.debug("Removing listener {}", l);
+        synchronized (listeners) {
+            listeners.remove(l);
+        }
+    }
+
+    void start() {
+        if (running.compareAndSet(false, true)) {
+            watcherThread = new Thread(queueWatcher, "watcher");
+            watcherThread.start();
+        }
+    }
+
+    void stop() {
+        if (running.compareAndSet(true, false)) {
+            watcherThread.interrupt();
+            watcherThread = null;
+        }
+    }
+
+    void queueLink(Link link) {
+        log.debug("Queuing link {}", link);
+        synchronized (queue) {
+            queue.addLast(link);
+            queue.notifyAll();
+        }
+    }
+
+    private void notifyListeners(Link link) {
+        synchronized (listeners) {
+            log.debug("Sending to {} other(s)", listeners.size());
+            for (PlexerListener l : listeners) {
+                l.onNewLink(link);
+            }
+        }
+    }
+
+    interface PlexerListener {
+        void onNewLink(Link link);
+    }
+
+}

@@ -35,6 +35,7 @@ public final class Backend extends HttpServlet {
 
         resp.setHeader("Cache-Control", "no-cache");
         resp.setContentType("text/event-stream;charset=utf-8");
+        resp.setHeader("Access-Control-Allow-Origin", "*");
 
         PrintWriter out = resp.getWriter();
 

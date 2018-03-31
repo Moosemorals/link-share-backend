@@ -70,6 +70,12 @@ final class EventPlexer {
         if (running.compareAndSet(true, false)) {
             watcherThread.interrupt();
             watcherThread = null;
+
+            synchronized (listeners) {
+                for (PlexerListener l : listeners) {
+                    l.onShutdown();
+                }
+            }
         }
     }
 
@@ -92,6 +98,7 @@ final class EventPlexer {
 
     interface PlexerListener {
         void onNewLink(Link link);
+        void onShutdown();
     }
 
 }

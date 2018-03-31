@@ -12,9 +12,9 @@ import java.io.IOException;
 
 @WebFilter("/*")
 public class AuthFilter implements Filter {
-
-    private final Logger log = LoggerFactory.getLogger(AuthFilter.class);
+    static final String USER = "com.moosemorals.user";
     private static final String BASIC = "basic";
+    private final Logger log = LoggerFactory.getLogger(AuthFilter.class);
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
@@ -41,13 +41,16 @@ public class AuthFilter implements Filter {
         }
 */
         String authHeader = req.getHeader("Authorization");
-        if (authHeader != null && checkAuth(authHeader)) {
-            chain.doFilter(req, resp);
-        } else {
-            resp.setHeader("WWW-Authenticate", "Basic realm=\"link-share\"");
-            resp.setStatus(401);
+        if (authHeader != null) {
+            User user = checkAuth(authHeader);
+            if (user != null) {
+                req.setAttribute(USER, user );
+                chain.doFilter(req, resp);
+                return;
+            }
         }
-
+        resp.setHeader("WWW-Authenticate", "Basic realm=\"link-share\"");
+        resp.setStatus(401);
     }
 
     @Override
@@ -55,10 +58,10 @@ public class AuthFilter implements Filter {
 
     }
 
-    private boolean checkAuth(String authHeader) {
+    private User checkAuth(String authHeader) {
 
         if (!authHeader.toLowerCase().startsWith(BASIC)) {
-            return false;
+            return null;
         }
 
         String base64 = authHeader.substring(BASIC.length() + 1);
@@ -66,12 +69,12 @@ public class AuthFilter implements Filter {
         String creds = new String(new Base64().decode(base64));
 
         if (!creds.contains(":")) {
-            return false;
+            return null;
         }
 
         String[] parts = creds.split(":");
         if (parts.length != 2) {
-            return false;
+            return null;
         }
 
         return AuthManager.getInstance().checkAuth(parts[0], parts[1]);

@@ -90,29 +90,36 @@ final class AuthManager {
         }
     }
 
-    boolean checkAuth(String name, String password) {
+    User checkAuth(String name, String password) {
         Credentials c;
         synchronized (creds) {
             c = creds.get(name);
         }
         if (c == null) {
-            return false;
+            return null;
         }
 
-        return checkPassword(c.getSaltAndHash(), password);
+        if (checkPassword(c.getSaltAndHash(), password)) {
+            return new User(name);
+        } else {
+            return null;
+        }
     }
 
     void saveDatabase(Properties props) throws IOException {
+
         JsonArrayBuilder json = Json.createArrayBuilder();
         synchronized (creds) {
             for (Credentials c : creds.values()) {
                 json.add(c.toJson());
             }
         }
+        JsonArray jsonArray = json.build();
 
         File authDatabase = Globals.getFile(props, FILENAME);
+        log.info("Writing {} entries to {}", jsonArray.size(), authDatabase.getAbsolutePath());
         try (JsonWriter out = Json.createWriter(new FileWriter(authDatabase))) {
-            out.write(json.build());
+            out.write(jsonArray);
         }
     }
 
@@ -122,6 +129,7 @@ final class AuthManager {
         try (JsonReader in = Json.createReader(new FileReader(authDatabase))) {
             credsArray = in.readArray();
         }
+        log.info("Read {} entries from ", credsArray.size(), authDatabase);
         synchronized (creds) {
             creds.clear();
             for (JsonValue v : credsArray) {

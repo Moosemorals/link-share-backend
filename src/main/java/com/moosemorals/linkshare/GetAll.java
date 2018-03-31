@@ -3,6 +3,7 @@ package com.moosemorals.linkshare;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
+import javax.json.JsonWriter;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -24,7 +25,7 @@ public final class GetAll extends HttpServlet {
             try {
                 latest = Long.parseLong(strLatest, 0);
             } catch (NumberFormatException ex) {
-                latest = 0;
+                // ignored
             }
         }
 
@@ -35,12 +36,10 @@ public final class GetAll extends HttpServlet {
             json.add(l.toJson());
         }
 
-        String result = json.build().toString();
-
         resp.setStatus(HttpServletResponse.SC_OK);
         resp.setContentType("application/json");
-        resp.setContentLength(result.length());
-        resp.getWriter().write(result);
-
+        try (JsonWriter out = Json.createWriter(resp.getWriter())) {
+            out.write(json.build());
+        }
     }
 }

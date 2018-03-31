@@ -8,34 +8,30 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.*;
 
 final class LinkManager {
 
     private static final String FILENAME = "links.json";
     private static final LinkManager INSTANCE = new LinkManager();
     private static final int MAX_LINKS = 50;
-    private final AtomicLong linkIds = new AtomicLong(0);
-    private final List<Link> allLinks = new ArrayList<>();
+    private final Map<String, Link> allLinks = new HashMap<>();
     private final Logger log = LoggerFactory.getLogger(LinkManager.class);
-    private LinkManager() {
 
+    private LinkManager() {
     }
 
     static LinkManager getInstance() {
         return INSTANCE;
     }
 
-    Link createLink(String linkDestination, String description) {
-        long id = linkIds.incrementAndGet();
+    Link createLink(User owner, String target, String title, String favIconURL, String description) {
+        String id = Globals.generateId();
 
-        Link link = new Link(linkDestination, description, id);
+        Link link = new Link(owner, id, target, title, favIconURL, description);
 
         synchronized (allLinks) {
-            allLinks.add(link);
+            allLinks.put(link.getId(), link);
             if (allLinks.size() > MAX_LINKS) {
                 allLinks.remove(0);
             }
@@ -50,7 +46,7 @@ final class LinkManager {
         List<Link> result = new ArrayList<>();
 
         synchronized (allLinks) {
-            for (Link l : allLinks) {
+            for (Link l : allLinks.values()) {
                 if (l.getCreated() >= from) {
                     result.add(l);
                 }
@@ -60,8 +56,8 @@ final class LinkManager {
         return result;
     }
 
-    JsonArray getJsonLinks(long from) {
-        List<Link> links = getLinks(from);
+    private JsonArray getJsonLinks() {
+        List<Link> links = getLinks(0);
 
         JsonArrayBuilder json = Json.createArrayBuilder();
         for (Link l : links) {
@@ -71,7 +67,7 @@ final class LinkManager {
         return json.build();
     }
 
-    void setLinks(JsonArray links) {
+    private void setLinks(JsonArray links) {
         List<Link> newLinks = new ArrayList<>(links.size());
         for (JsonValue raw : links) {
             JsonObject json = raw.asJsonObject();
@@ -81,15 +77,17 @@ final class LinkManager {
 
         synchronized (allLinks) {
             allLinks.clear();
-            allLinks.addAll(newLinks);
+            for (Link l : newLinks) {
+                allLinks.put(l.getId(), l);
+            }
         }
     }
 
     void saveLinks(Properties props) throws IOException {
-        JsonArray links = getJsonLinks(0);
+        JsonArray links = getJsonLinks();
 
-        log.debug("Saving {} link(s)", links.size());
         File linkFile = Globals.getFile(props, FILENAME);
+        log.info("Saving {} link(s) to {}", links.size(), linkFile.getAbsolutePath());
         try (FileWriter out = new FileWriter(linkFile)) {
             out.write(links.toString());
             out.flush();
@@ -100,6 +98,7 @@ final class LinkManager {
         File linkFile = Globals.getFile(props, FILENAME);
         try (JsonReader in = Json.createReader(new FileReader(linkFile))) {
             JsonArray links = in.readArray();
+            log.info("Read {} link(s) from {}", links.size(), linkFile.getAbsolutePath());
             setLinks(links);
         }
     }

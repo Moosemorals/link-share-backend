@@ -14,10 +14,13 @@ import java.util.LinkedList;
 
 @WebServlet("/backend")
 public final class Backend extends HttpServlet {
+
+    private final long TIMEOUT = 8 * 60 * 1000;     // 8 minutes
     private final Logger log = LoggerFactory.getLogger(Backend.class);
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        final Thread servletThread = Thread.currentThread();
         final LinkedList<Link> queue = new LinkedList<>();
         final EventPlexer.PlexerListener listener = new EventPlexer.PlexerListener() {
             @Override
@@ -26,6 +29,11 @@ public final class Backend extends HttpServlet {
                     queue.addLast(link);
                     queue.notifyAll();
                 }
+            }
+
+            @Override
+            public void onShutdown() {
+                servletThread.interrupt();
             }
         };
 
@@ -47,10 +55,22 @@ public final class Backend extends HttpServlet {
                 Link next;
                 synchronized (queue) {
                     while (queue.isEmpty()) {
-                        queue.wait();
+                        queue.wait(TIMEOUT);
                     }
 
-                    next = queue.removeFirst();
+                    if (!queue.isEmpty()) {
+                        next = queue.removeFirst();
+                    } else {
+                        next = null;
+                    }
+                }
+
+                if (next == null) {
+                    // was a timeout, so just send a keep alive
+                    log.debug("Sending a keep alive");
+                    out.write(":\n\n");
+                    out.flush();
+                    continue;
                 }
 
                 log.debug("{}: Sending link: {}", req.getRemoteAddr(), next);
@@ -62,6 +82,10 @@ public final class Backend extends HttpServlet {
                     break;
                 }
             } catch (InterruptedException e) {
+                log.info("Closing down");
+                out.write("close: closed\n\n");
+                out.flush();
+                out.close();
                 break;
             }
         }

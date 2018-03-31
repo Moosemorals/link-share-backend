@@ -88,8 +88,17 @@ $("#form").addEventListener("submit", e => {
 
     if ($("#linkInput").checkValidity()) {
         const form = e.target;
-        form.submit();
+        const body = new URLSearchParams();
+        const param = form.elements;
+        for (let i = 0; i < param.length; i += 1) {
+            body.append(param[i].name, param[i].value);
+        }
         form.reset();
+        fetch(form.action, {
+            credentials: "include",
+            method: "POST",
+            body: body
+        });
     } else {
         showMessage("Please enter a valid link");
     }

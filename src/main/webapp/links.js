@@ -77,7 +77,9 @@ function addLinks(list) {
 
 eventSource.addEventListener("message", e => addLink(JSON.parse(e.data)) )
 
-fetch("links")
+fetch("links", {
+    credentials: "include",
+})
     .then(response => response.json())
     .then(json => addLinks(json))
 

@@ -17,18 +17,17 @@ import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 final class AuthManager {
 
     static final int DEFAULT_ITERATIONS = 30 * 1000;
-    private static final File AUTH_DATABASE = new File("/home/osric/tmp/auth.json");
-    private static final int DEFAULT_KEYLENGTH = 256;
-
+    private static final String FILENAME = "auth.json";
+    private static final int DEFAULT_KEY_LENGTH = 256;
     private static final AuthManager INSTANCE = new AuthManager();
-
     private static final SecureRandom random = new SecureRandom();
-    private final Map<String, Credentials> creds = new HashMap<>();
     private static final Logger log = LoggerFactory.getLogger(AuthManager.class);
+    private final Map<String, Credentials> creds = new HashMap<>();
 
     private AuthManager() {
     }
@@ -47,7 +46,7 @@ final class AuthManager {
                 password.toCharArray(),
                 salt,
                 DEFAULT_ITERATIONS,
-                DEFAULT_KEYLENGTH
+                DEFAULT_KEY_LENGTH
         );
 
         Base64 encoder = new Base64();
@@ -65,7 +64,7 @@ final class AuthManager {
                 given.toCharArray(),
                 salt,
                 DEFAULT_ITERATIONS,
-                DEFAULT_KEYLENGTH
+                DEFAULT_KEY_LENGTH
         );
 
         byte[] passwordHash = decoder.decode(parts[1]);
@@ -103,7 +102,7 @@ final class AuthManager {
         return checkPassword(c.getSaltAndHash(), password);
     }
 
-    void saveDatabase() throws IOException {
+    void saveDatabase(Properties props) throws IOException {
         JsonArrayBuilder json = Json.createArrayBuilder();
         synchronized (creds) {
             for (Credentials c : creds.values()) {
@@ -111,14 +110,16 @@ final class AuthManager {
             }
         }
 
-        try (JsonWriter out = Json.createWriter(new FileWriter(AUTH_DATABASE))) {
+        File authDatabase = Globals.getFile(props, FILENAME);
+        try (JsonWriter out = Json.createWriter(new FileWriter(authDatabase))) {
             out.write(json.build());
         }
     }
 
-    void loadDatabase() throws IOException {
+    void loadDatabase(Properties props) throws IOException {
+        File authDatabase = Globals.getFile(props, FILENAME);
         JsonArray credsArray;
-        try (JsonReader in = Json.createReader(new FileReader(AUTH_DATABASE))) {
+        try (JsonReader in = Json.createReader(new FileReader(authDatabase))) {
             credsArray = in.readArray();
         }
         synchronized (creds) {

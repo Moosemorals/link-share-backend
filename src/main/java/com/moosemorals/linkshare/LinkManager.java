@@ -10,13 +10,14 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
 
 final class LinkManager {
 
+    private static final String FILENAME = "links.json";
     private static final LinkManager INSTANCE = new LinkManager();
     private static final int MAX_LINKS = 50;
-    private final File linkFile = new File("/home/osric/tmp/links.json");
     private final AtomicLong linkIds = new AtomicLong(0);
     private final List<Link> allLinks = new ArrayList<>();
     private final Logger log = LoggerFactory.getLogger(LinkManager.class);
@@ -70,7 +71,7 @@ final class LinkManager {
         return json.build();
     }
 
-    public void setLinks(JsonArray links) {
+    void setLinks(JsonArray links) {
         List<Link> newLinks = new ArrayList<>(links.size());
         for (JsonValue raw : links) {
             JsonObject json = raw.asJsonObject();
@@ -84,29 +85,22 @@ final class LinkManager {
         }
     }
 
-    void saveLinks() {
-
+    void saveLinks(Properties props) throws IOException {
         JsonArray links = getJsonLinks(0);
 
         log.debug("Saving {} link(s)", links.size());
-
+        File linkFile = Globals.getFile(props, FILENAME);
         try (FileWriter out = new FileWriter(linkFile)) {
             out.write(links.toString());
             out.flush();
-        } catch (IOException ex) {
-            log.error("Can't save links to {}", linkFile.getAbsoluteFile(), ex);
         }
     }
 
-    void loadLinks() {
-
+    void loadLinks(Properties props) throws IOException {
+        File linkFile = Globals.getFile(props, FILENAME);
         try (JsonReader in = Json.createReader(new FileReader(linkFile))) {
             JsonArray links = in.readArray();
-
             setLinks(links);
-
-        } catch (IOException ex) {
-            log.warn("Can't load links from {}", linkFile, ex);
         }
     }
 }

@@ -28,6 +28,7 @@ public class AuthFilter implements Filter {
 
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse resp = (HttpServletResponse) response;
+
 /*
         if (!req.isSecure()) {
             URI reqURI;
@@ -40,16 +41,29 @@ public class AuthFilter implements Filter {
             }
         }
 */
-        String authHeader = req.getHeader("Authorization");
-        if (authHeader != null) {
-            User user = checkAuth(authHeader);
-            if (user != null) {
-                req.setAttribute(USER, user );
-                chain.doFilter(req, resp);
-                return;
-            }
+        if (req.getServletPath().equals("/login")) {
+            chain.doFilter(request, response);
+            return;
         }
+
+
+        User user = null;
+        String token = req.getParameter("_t");
+        String authHeader = req.getHeader("Authorization");
+        if (token != null && !token.isEmpty()) {
+            user = AuthManager.getInstance().checkToken(token);
+        } else if (authHeader != null) {
+            user = checkAuth(authHeader);
+        }
+
+        if (user != null) {
+            req.setAttribute(USER, user);
+            chain.doFilter(req, resp);
+            return;
+        }
+
         resp.setHeader("WWW-Authenticate", "Basic realm=\"link-share\"");
+        resp.setHeader("Access-Control-Allow-Origin", "*");
         resp.setStatus(401);
     }
 

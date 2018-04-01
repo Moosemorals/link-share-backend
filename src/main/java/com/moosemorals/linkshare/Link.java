@@ -6,29 +6,29 @@ import javax.json.JsonObjectBuilder;
 
 final class Link {
 
-    private final String link;
-    private final String description;
+    private final String url;
     private final String id;
     private final String title;
     private final String favIconURL;
     private final long created;
     private final User owner;
 
-    Link(User owner, String id, String link, String title, String favIconURL, String description) {
+    Link(User owner, String id, String link, String title, String favIconURL) {
         this.owner = owner;
-        this.link = link;
+        this.url = link;
         this.id = id;
-        this.description = description;
         this.created = System.currentTimeMillis();
         this.title = title;
         this.favIconURL = favIconURL;
     }
 
     Link(JsonObject json) {
-        if (json.containsKey("link")) {
-            this.link = json.getString("link");
+        if (json.containsKey("url")) {
+            this.url = json.getString("url");
+        } else if (json.containsKey("link")) {
+            this.url = json.getString("link");
         } else {
-            throw new IllegalArgumentException("Missing link from json");
+            throw new IllegalArgumentException("Missing url from json");
         }
         if (json.containsKey("id")) {
             this.id = json.getJsonString("id").getString();
@@ -45,29 +45,20 @@ final class Link {
         } else {
             throw new IllegalArgumentException("Missing owner from json");
         }
-        this.description = json.getString("description", null);
         this.title = json.getString("title", null);
         this.favIconURL = json.getString("favIconUrl", null);
-    }
-
-    String getLink() {
-        return link;
     }
 
     String getId() { return id; }
 
     JsonObject toJson() {
         JsonObjectBuilder json = Json.createObjectBuilder()
-                .add("link", link)
+                .add("url", url)
                 .add("id", id)
                 .add("created", created)
                 .add("owner", owner.toJson());
 
-        if (description != null) {
-            json.add("description", description);
-        }
-
-        if (title != null) {
+       if (title != null) {
             json.add("title", title);
         }
 
@@ -80,5 +71,9 @@ final class Link {
 
     long getCreated() {
         return created;
+    }
+
+    User getOwner() {
+        return owner;
     }
 }

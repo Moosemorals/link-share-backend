@@ -16,14 +16,14 @@ final class EventPlexer {
         return INSTANCE;
     }
 
-    private final LinkedList<Link> queue;
+    private final LinkedList<QueueItem> queue;
     private final Set<PlexerListener> listeners = new HashSet<>();
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final Runnable queueWatcher = new Runnable() {
         @Override
         public void run() {
             while (running.get() && !Thread.interrupted()) {
-                Link next;
+                QueueItem next;
                 synchronized (queue) {
                     while (queue.isEmpty()) {
                         try {
@@ -79,26 +79,29 @@ final class EventPlexer {
         }
     }
 
-    void queueLink(Link link) {
+    void queueLink(Action action, Link link) {
         log.debug("Queuing link {}", link);
         synchronized (queue) {
-            queue.addLast(link);
+            queue.addLast(new QueueItem(action, link));
             queue.notifyAll();
         }
     }
 
-    private void notifyListeners(Link link) {
+    private void notifyListeners(QueueItem item) {
         synchronized (listeners) {
             log.debug("Sending to {} other(s)", listeners.size());
             for (PlexerListener l : listeners) {
-                l.onNewLink(link);
+                l.onNewLink(item);
             }
         }
     }
 
     interface PlexerListener {
-        void onNewLink(Link link);
+        void onNewLink(QueueItem item);
         void onShutdown();
     }
 
+    enum Action {
+        CREATED, DELETED
+    }
 }

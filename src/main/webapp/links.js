@@ -60,11 +60,13 @@ var eventSource = new EventSource("backend");
 function addLink(link) {
     $("#links").appendChild(
         buildElement("tr", undefined,
-            buildElement("td", {"class": "date"}, formatDate(link["created"])),
-            buildElement("td", {"class": "link"},
-                buildElement("a", {"href": link["link"]}, link["link"])
+            buildElement("td", {"class": "favIcon"},
+                buildElement("img", {"src": link["favIconURL"] || 'about:blank', "alt": link["title"] || ""})
             ),
-            buildElement("td", {"class": "desc"}, link["description"] || '[No description]')
+            buildElement("td", {"class": "link"},
+                buildElement("a", {"href": link["url"]}, link["title"] || link["url"])
+            ),
+            buildElement("td", {"class": "date"}, formatDate(link["created"]))
         )
     )
 }
@@ -103,4 +105,3 @@ $("#form").addEventListener("submit", e => {
         showMessage("Please enter a valid link");
     }
 })
-

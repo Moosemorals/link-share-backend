@@ -15,9 +15,7 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 final class AuthManager {
 
@@ -28,6 +26,7 @@ final class AuthManager {
     private static final SecureRandom random = new SecureRandom();
     private static final Logger log = LoggerFactory.getLogger(AuthManager.class);
     private final Map<String, Credentials> creds = new HashMap<>();
+    private final Map<User, Set<String>> tokens = new HashMap<>();
 
     private AuthManager() {
     }
@@ -137,5 +136,30 @@ final class AuthManager {
                 creds.put(c.getName(), c);
             }
         }
+    }
+
+    User checkToken(String token) {
+        synchronized (tokens) {
+            for (Map.Entry<User, Set<String>> entry : tokens.entrySet()) {
+                for (String t : entry.getValue()) {
+                    if (t.equals(token)) {
+                        return entry.getKey();
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    String createToken(User user) {
+        String token = Globals.generateId();
+        synchronized (tokens) {
+            if (!tokens.containsKey(user)) {
+                tokens.put(user, new HashSet<String>());
+            }
+
+            tokens.get(user).add(token);
+        }
+        return token;
     }
 }

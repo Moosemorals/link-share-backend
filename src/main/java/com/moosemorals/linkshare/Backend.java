@@ -21,12 +21,12 @@ public final class Backend extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         final Thread servletThread = Thread.currentThread();
-        final LinkedList<Link> queue = new LinkedList<>();
+        final LinkedList<QueueItem> queue = new LinkedList<>();
         final EventPlexer.PlexerListener listener = new EventPlexer.PlexerListener() {
             @Override
-            public void onNewLink(Link link) {
+            public void onNewLink(QueueItem item) {
                 synchronized (queue) {
-                    queue.addLast(link);
+                    queue.addLast(item);
                     queue.notifyAll();
                 }
             }
@@ -44,7 +44,7 @@ public final class Backend extends HttpServlet {
         resp.setHeader("Cache-Control", "no-cache");
         resp.setContentType("text/event-stream;charset=utf-8");
         resp.setHeader("Access-Control-Allow-Origin", "*");
-
+        resp.setHeader("Connection", "close");
         PrintWriter out = resp.getWriter();
 
         out.write(":\n\n");
@@ -52,7 +52,7 @@ public final class Backend extends HttpServlet {
 
         while (!Thread.interrupted()) {
             try {
-                Link next;
+                QueueItem next;
                 synchronized (queue) {
                     while (queue.isEmpty()) {
                         queue.wait(TIMEOUT);
@@ -94,12 +94,17 @@ public final class Backend extends HttpServlet {
         log.debug("{}: No longer connected", req.getRemoteAddr());
     }
 
-    private String buildEvent(Link link) {
-        StringBuilder message = new StringBuilder();
+    private String buildEvent(QueueItem item) {
+        return
+                "event: " +
+                item.action
+                .toString()
+                .toLowerCase() +
+                "\ndata: " +
+                item.link
+                        .toJson()
+                        .toString() +
+                "\n\n";
 
-        message.append("data: ").append(link.toJson().toString()).append("\n");
-        message.append("\n\n");
-
-        return message.toString();
     }
 }

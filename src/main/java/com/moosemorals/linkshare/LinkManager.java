@@ -25,10 +25,10 @@ final class LinkManager {
         return INSTANCE;
     }
 
-    Link createLink(User owner, String target, String title, String favIconURL, String description) {
+    Link createLink(User owner, String url, String title, String favIconURL) {
         String id = Globals.generateId();
 
-        Link link = new Link(owner, id, target, title, favIconURL, description);
+        Link link = new Link(owner, id, url, title, favIconURL);
 
         synchronized (allLinks) {
             allLinks.put(link.getId(), link);
@@ -37,7 +37,7 @@ final class LinkManager {
             }
         }
 
-        EventPlexer.getInstance().queueLink(link);
+        EventPlexer.getInstance().queueLink(EventPlexer.Action.CREATED, link);
 
         return link;
     }
@@ -100,6 +100,18 @@ final class LinkManager {
             JsonArray links = in.readArray();
             log.info("Read {} link(s) from {}", links.size(), linkFile.getAbsolutePath());
             setLinks(links);
+        }
+    }
+
+    Link deleteLink(User user, String id) {
+        synchronized (allLinks) {
+            Link link = allLinks.get(id);
+            if (link != null && link.getOwner() == user) {
+                allLinks.remove(id);
+                return link;
+            } else {
+                return null;
+            }
         }
     }
 }

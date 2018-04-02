@@ -70,7 +70,7 @@ final class LinkManager {
     private void setLinks(JsonArray links) {
         List<Link> newLinks = new ArrayList<>(links.size());
         for (JsonValue raw : links) {
-            JsonObject json = raw.asJsonObject();
+            JsonObject json = (JsonObject)raw;
 
             newLinks.add(new Link(json));
         }

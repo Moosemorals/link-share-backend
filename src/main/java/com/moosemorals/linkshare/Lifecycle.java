@@ -5,17 +5,13 @@ import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
-import javax.servlet.annotation.WebListener;
 import java.io.IOException;
 import java.util.Properties;
 
-@WebListener
 public final class Lifecycle implements ServletContextListener {
     private static final long PERIOD = 15 * 60 * 997;   // Fifteen minutes, ish
     private final Logger log = LoggerFactory.getLogger(Backend.class);
     private Properties props = new Properties();
-
-    private Thread periodicallyThread;
     private final Runnable periodically = new Runnable() {
         @Override
         public void run() {
@@ -34,6 +30,7 @@ public final class Lifecycle implements ServletContextListener {
             }
         }
     };
+    private Thread periodicallyThread;
 
     @Override
     public void contextInitialized(ServletContextEvent sce) {
@@ -52,7 +49,9 @@ public final class Lifecycle implements ServletContextListener {
 
     @Override
     public void contextDestroyed(ServletContextEvent sce) {
-        periodicallyThread.interrupt();
+        if (periodicallyThread != null) {
+            periodicallyThread.interrupt();
+        }
         EventPlexer.getInstance().stop();
         try {
             AuthManager.getInstance().saveDatabase(props);

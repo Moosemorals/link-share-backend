@@ -66,7 +66,7 @@ final class Globals {
 
     static void sendSuccess(HttpServletResponse resp, String... message) throws IOException {
         if (message.length == 1) {
-            sendSuccess(resp, Json.createValue(message[0]));
+            sendSuccess(resp, Globals.toJson(message[0]));
         } else if (message.length %2 == 0) {
             JsonObjectBuilder json = Json.createObjectBuilder();
             for (int i = 0; i < message.length; i += 2) {
@@ -80,5 +80,12 @@ final class Globals {
         resp.setCharacterEncoding("UTF-8");
         resp.setContentType("application/json");
         resp.setHeader("Access-Control-Allow-Origin", "*");
+    }
+
+    static JsonValue toJson(String value) {
+        return Json.createObjectBuilder()
+                .add("string", value)
+                .build()
+                .getJsonString("string");
     }
 }

@@ -39,6 +39,6 @@ final class User {
     }
 
     JsonValue toJson() {
-        return Json.createValue(name);
+        return Globals.toJson(name);
     }
 }

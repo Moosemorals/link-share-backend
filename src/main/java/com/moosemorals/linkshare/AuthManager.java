@@ -13,7 +13,9 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.security.Provider;
 import java.security.SecureRandom;
+import java.security.Security;
 import java.security.spec.InvalidKeySpecException;
 import java.util.*;
 
@@ -21,6 +23,7 @@ final class AuthManager {
 
     static final int DEFAULT_ITERATIONS = 30 * 1000;
     private static final String FILENAME = "auth.json";
+    private static final String PASSWORD_HASH = "PBKDF2WithHmacSHA1";
     private static final int DEFAULT_KEY_LENGTH = 256;
     private static final AuthManager INSTANCE = new AuthManager();
     private static final SecureRandom random = new SecureRandom();
@@ -53,7 +56,7 @@ final class AuthManager {
         return encoder.encodeToString(salt) + ":" + encoder.encodeToString(hash);
     }
 
-    static boolean checkPassword(String saltAndHash, String given) {
+    private static boolean checkPassword(String saltAndHash, String given) {
         Base64 decoder = new Base64();
         String[] parts = saltAndHash.split(":");
 
@@ -79,7 +82,7 @@ final class AuthManager {
 
     private static byte[] hashPassword(final char[] password, final byte[] salt, final int iterations, final int keyLength) {
         try {
-            SecretKeyFactory skf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA512");
+            SecretKeyFactory skf = SecretKeyFactory.getInstance(PASSWORD_HASH);
             PBEKeySpec spec = new PBEKeySpec(password, salt, iterations, keyLength);
             SecretKey key = skf.generateSecret(spec);
             return key.getEncoded();
@@ -132,7 +135,7 @@ final class AuthManager {
         synchronized (creds) {
             creds.clear();
             for (JsonValue v : credsArray) {
-                Credentials c = new Credentials(v.asJsonObject());
+                Credentials c = new Credentials((JsonObject)v);
                 creds.put(c.getName(), c);
             }
         }

@@ -26,6 +26,10 @@
         <servlet-class>com.moosemorals.linkshare.Login</servlet-class>
     </servlet>
     <servlet>
+        <servlet-name>Logout</servlet-name>
+        <servlet-class>com.moosemorals.linkshare.Logout</servlet-class>
+    </servlet>
+    <servlet>
         <servlet-name>Submit</servlet-name>
         <servlet-class>com.moosemorals.linkshare.Submit</servlet-class>
     </servlet>
@@ -42,6 +46,10 @@
     <servlet-mapping>
         <servlet-name>Login</servlet-name>
         <url-pattern>/login</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>Logout</servlet-name>
+        <url-pattern>/logout</url-pattern>
     </servlet-mapping>
     <servlet-mapping>
         <servlet-name>Submit</servlet-name>

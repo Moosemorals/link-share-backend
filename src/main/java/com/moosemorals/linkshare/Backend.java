@@ -71,8 +71,9 @@ public final class Backend extends HttpServlet {
                     continue;
                 }
 
-                log.debug("{}: Sending link: {}", req.getRemoteAddr(), next);
-                out.write(buildEvent(next));
+                String event = buildEvent(next);
+                log.debug("{}: Sending event: {}", req.getRemoteAddr(), event);
+                out.write(event);
                 out.flush();
 
                 if (out.checkError()) {

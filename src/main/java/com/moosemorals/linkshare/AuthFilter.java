@@ -11,6 +11,7 @@ import java.io.IOException;
 
 public class AuthFilter implements Filter {
     static final String USER = "com.moosemorals.user";
+    static final String TOKEN = "com.moosemorals.token";
     private static final String BASIC = "basic";
     private final Logger log = LoggerFactory.getLogger(AuthFilter.class);
 
@@ -44,7 +45,6 @@ public class AuthFilter implements Filter {
             return;
         }
 
-
         User user = null;
         String token = req.getParameter("_t");
         String authHeader = req.getHeader("Authorization");
@@ -56,6 +56,9 @@ public class AuthFilter implements Filter {
 
         if (user != null) {
             req.setAttribute(USER, user);
+            if (token != null) {
+                req.setAttribute(TOKEN, token);
+            }
             chain.doFilter(req, resp);
             return;
         }

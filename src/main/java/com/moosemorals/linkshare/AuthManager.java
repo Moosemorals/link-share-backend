@@ -165,4 +165,20 @@ final class AuthManager {
         }
         return token;
     }
+
+    void logout(User user, String token) {
+        synchronized (tokens) {
+            if (tokens.containsKey(user)) {
+                if (token != null) {
+                    Set<String> userTokens = tokens.get(user);
+                    userTokens.remove(token);
+                    if (userTokens.isEmpty()) {
+                        tokens.remove(user);
+                    }
+                } else {
+                    tokens.remove(user);
+                }
+            }
+        }
+    }
 }

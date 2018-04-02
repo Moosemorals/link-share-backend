@@ -59,10 +59,6 @@ public final class LinksServlet extends HttpServlet {
             json.add(l.toJson());
         }
 
-        resp.setStatus(HttpServletResponse.SC_OK);
-        resp.setContentType("application/json");
-        try (JsonWriter out = Json.createWriter(resp.getWriter())) {
-            out.write(json.build());
-        }
+        Globals.sendSuccess(resp, json.build());
     }
 }

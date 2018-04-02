@@ -1,6 +1,5 @@
 package com.moosemorals.linkshare;
 
-import javax.json.Json;
 import javax.json.JsonString;
 import javax.json.JsonValue;
 

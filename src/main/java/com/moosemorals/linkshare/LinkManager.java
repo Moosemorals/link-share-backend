@@ -106,10 +106,11 @@ final class LinkManager {
     Link deleteLink(User user, String id) {
         synchronized (allLinks) {
             Link link = allLinks.get(id);
-            if (link != null && link.getOwner() == user) {
+            if (link != null && link.getOwner().equals(user)) {
                 allLinks.remove(id);
                 return link;
             } else {
+                log.info("Not deleting link {}, user {}", link.toJson());
                 return null;
             }
         }

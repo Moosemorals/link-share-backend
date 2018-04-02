@@ -3,18 +3,19 @@
 I want to be able to share links with my husband without going through
 some third party.
 
-## Plan
+## Parts
 
-This project has two parts. A Chrome extension that can send a link to the backend,
-and a backend database that tracks links that have been shared (so we can share them
-while the other is offline).
+### /backend
 
-Backend database needs to track users and links. (even if there are only ever going to
-be two users)
+A Server Sent Events server that sends new links out to connected clients
 
-Connection to the server is through a Server Sent Events stream
+### AuthManager
 
-On connect the client gives the ID of the last seen link
+Track users and login state
 
-Client submits links with a POST
+
+Users have:
+    name, password, hashed, tokens, machines
+
+    tokens and machines are paired?
 

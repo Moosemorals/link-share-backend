@@ -28,18 +28,6 @@ public class AuthFilter implements Filter {
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse resp = (HttpServletResponse) response;
 
-/*
-        if (!req.isSecure()) {
-            URI reqURI;
-            try {
-                reqURI = new URI(req.getRequestURI());
-                URI redirectURI = new URI("https", reqURI.getSchemeSpecificPart(), reqURI.getFragment());
-                resp.sendRedirect(redirectURI.toString());
-            } catch (URISyntaxException e) {
-                throw new ServletException("Broken URIs");
-            }
-        }
-*/
         if (req.getServletPath().equals("/login")) {
             chain.doFilter(request, response);
             return;
@@ -49,6 +37,7 @@ public class AuthFilter implements Filter {
         String token = req.getParameter("_t");
         String authHeader = req.getHeader("Authorization");
         if (token != null && !token.isEmpty()) {
+            log.debug("Checking token login");
             user = AuthManager.getInstance().checkToken(token);
         } else if (authHeader != null) {
             user = checkAuth(authHeader);

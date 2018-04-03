@@ -70,7 +70,7 @@ final class LinkManager {
     private void setLinks(JsonArray links) {
         List<Link> newLinks = new ArrayList<>(links.size());
         for (JsonValue raw : links) {
-            JsonObject json = raw.asJsonObject();
+            JsonObject json = (JsonObject)raw;
 
             newLinks.add(new Link(json));
         }
@@ -106,10 +106,11 @@ final class LinkManager {
     Link deleteLink(User user, String id) {
         synchronized (allLinks) {
             Link link = allLinks.get(id);
-            if (link != null && link.getOwner() == user) {
+            if (link != null && link.getOwner().equals(user)) {
                 allLinks.remove(id);
                 return link;
             } else {
+                log.info("Not deleting link {}, user {}", link.toJson());
                 return null;
             }
         }

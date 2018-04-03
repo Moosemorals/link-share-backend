@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -12,7 +11,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.LinkedList;
 
-@WebServlet("/backend")
 public final class Backend extends HttpServlet {
 
     private final long TIMEOUT = 8 * 60 * 1000;     // 8 minutes
@@ -73,8 +71,9 @@ public final class Backend extends HttpServlet {
                     continue;
                 }
 
-                log.debug("{}: Sending link: {}", req.getRemoteAddr(), next);
-                out.write(buildEvent(next));
+                String event = buildEvent(next);
+                log.debug("{}: Sending event: {}", req.getRemoteAddr(), event);
+                out.write(event);
                 out.flush();
 
                 if (out.checkError()) {
@@ -97,14 +96,14 @@ public final class Backend extends HttpServlet {
     private String buildEvent(QueueItem item) {
         return
                 "event: " +
-                item.action
-                .toString()
-                .toLowerCase() +
-                "\ndata: " +
-                item.link
-                        .toJson()
-                        .toString() +
-                "\n\n";
+                        item.action
+                                .toString()
+                                .toLowerCase() +
+                        "\ndata: " +
+                        item.link
+                                .toJson()
+                                .toString() +
+                        "\n\n";
 
     }
 }

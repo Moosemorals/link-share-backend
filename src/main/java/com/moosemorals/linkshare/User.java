@@ -1,6 +1,5 @@
 package com.moosemorals.linkshare;
 
-import javax.json.Json;
 import javax.json.JsonString;
 import javax.json.JsonValue;
 
@@ -39,6 +38,6 @@ final class User {
     }
 
     JsonValue toJson() {
-        return Json.createValue(name);
+        return Globals.toJson(name);
     }
 }

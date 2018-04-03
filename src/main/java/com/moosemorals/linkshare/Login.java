@@ -2,14 +2,11 @@ package com.moosemorals.linkshare;
 
 import javax.json.Json;
 import javax.json.JsonObject;
-import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-@WebServlet("/login")
 public class Login extends HttpServlet {
 
     @Override
@@ -32,7 +29,7 @@ public class Login extends HttpServlet {
         if (user != null) {
             JsonObject json = Json.createObjectBuilder()
                     .add("user", user.toJson())
-                    .add("token", auth.createToken(user) )
+                    .add("token", auth.createToken(user))
                     .build();
             Globals.sendSuccess(resp, json);
         } else {

@@ -25,10 +25,10 @@ final class LinkManager {
         return INSTANCE;
     }
 
-    Link createLink(User owner, String url, String title, String favIconURL) {
+    Link createLink(User from, User to, String url, String title, String favIconURL) {
         String id = Globals.generateId();
 
-        Link link = new Link(owner, id, url, title, favIconURL);
+        Link link = new Link(from, to, id, url, title, favIconURL);
 
         synchronized (allLinks) {
             allLinks.put(link.getId(), link);
@@ -70,7 +70,7 @@ final class LinkManager {
     private void setLinks(JsonArray links) {
         List<Link> newLinks = new ArrayList<>(links.size());
         for (JsonValue raw : links) {
-            JsonObject json = (JsonObject)raw;
+            JsonObject json = (JsonObject) raw;
 
             newLinks.add(new Link(json));
         }
@@ -106,7 +106,7 @@ final class LinkManager {
     Link deleteLink(User user, String id) {
         synchronized (allLinks) {
             Link link = allLinks.get(id);
-            if (link != null && link.getOwner().equals(user)) {
+            if (link != null && link.getFrom().equals(user)) {
                 allLinks.remove(id);
                 return link;
             } else {

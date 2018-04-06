@@ -181,4 +181,14 @@ final class AuthManager {
             }
         }
     }
+
+    User lookupUser(String to) {
+        String userName = to.toLowerCase();
+        synchronized (creds) {
+            if (creds.containsKey(userName)) {
+                return new User(userName);
+            }
+        }
+        return null;
+    }
 }

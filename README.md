@@ -3,19 +3,41 @@
 I want to be able to share links with my husband without going through
 some third party.
 
-## Parts
+## Thinking about data
 
-### /backend
+Links
+    url             // Long string, 4k probably
+    created         // timestamp
+    owner           // Foreign key to users
 
-A Server Sent Events server that sends new links out to connected clients
+Users
+    name            // Long string
+    id              // string
 
-### AuthManager
+Passwords
+    owner           // Foreign key to users
+    algorithm       // String
+    salt            // String
+    hash            // String
+    iterations      // int
+    lastChanged     // timestamp
+    locked          // boolean
 
-Track users and login state
+Tokens
+    owner
+    token
+    created
+    lastUsed
 
+Devices
+    owner
+    name
 
-Users have:
-    name, password, hashed, tokens, machines
+Settings
+    owner
+    name        // Probably not actually name, but a pointer to a name table
+    value
 
-    tokens and machines are paired?
-
+LinkUser
+    user
+    visted

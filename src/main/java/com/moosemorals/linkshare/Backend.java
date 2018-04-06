@@ -18,9 +18,17 @@ public final class Backend extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+
+        final User user = (User)req.getAttribute(AuthFilter.USER);
+
         final Thread servletThread = Thread.currentThread();
         final LinkedList<QueueItem> queue = new LinkedList<>();
         final EventPlexer.PlexerListener listener = new EventPlexer.PlexerListener() {
+            @Override
+            public User getUser() {
+                return user;
+            }
+
             @Override
             public void onNewLink(QueueItem item) {
                 synchronized (queue) {

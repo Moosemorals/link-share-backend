@@ -40,19 +40,9 @@ public final class LinksServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        User user = (User)req.getAttribute(AuthFilter.USER);
 
-        long latest = 0;
-
-        String strLatest = req.getParameter("latest");
-        if (strLatest != null && !strLatest.isEmpty()) {
-            try {
-                latest = Long.parseLong(strLatest, 0);
-            } catch (NumberFormatException ex) {
-                // ignored
-            }
-        }
-
-        List<Link> links = LinkManager.getInstance().getLinks(latest);
+        List<Link> links = LinkManager.getInstance().getLinks(user);
 
         JsonArrayBuilder json = Json.createArrayBuilder();
         for (Link l : links) {

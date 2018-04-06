@@ -26,6 +26,8 @@ final class LinkManager {
     }
 
     Link createLink(User from, User to, String url, String title, String favIconURL) {
+        EventPlexer plexer = EventPlexer.getInstance();
+
         String id = Globals.generateId();
 
         Link link = new Link(from, to, id, url, title, favIconURL);
@@ -33,35 +35,47 @@ final class LinkManager {
         synchronized (allLinks) {
             allLinks.put(link.getId(), link);
             if (allLinks.size() > MAX_LINKS) {
-                allLinks.remove(0);
+                plexer.queueLink(EventPlexer.Action.DELETED, allLinks.remove(0));
             }
         }
 
-        EventPlexer.getInstance().queueLink(EventPlexer.Action.CREATED, link);
+        plexer.queueLink(EventPlexer.Action.CREATED, link);
 
         return link;
     }
 
-    List<Link> getLinks(long from) {
+    List<Link> getLinks(User user) {
         List<Link> result = new ArrayList<>();
 
         synchronized (allLinks) {
             for (Link l : allLinks.values()) {
-                if (l.getCreated() >= from) {
+                if (l.getTo().equals(user) || l.getFrom().equals(user)) {
                     result.add(l);
                 }
             }
         }
-
         return result;
     }
 
+    Link deleteLink(User user, String id) {
+        synchronized (allLinks) {
+            Link link = allLinks.get(id);
+            if (link != null && link.getFrom().equals(user)) {
+                allLinks.remove(id);
+                return link;
+            } else {
+                return null;
+            }
+        }
+    }
+
     private JsonArray getJsonLinks() {
-        List<Link> links = getLinks(0);
 
         JsonArrayBuilder json = Json.createArrayBuilder();
-        for (Link l : links) {
-            json.add(l.toJson());
+        synchronized (allLinks) {
+            for (Link l : allLinks.values()) {
+                json.add(l.toJson());
+            }
         }
 
         return json.build();
@@ -103,16 +117,5 @@ final class LinkManager {
         }
     }
 
-    Link deleteLink(User user, String id) {
-        synchronized (allLinks) {
-            Link link = allLinks.get(id);
-            if (link != null && link.getFrom().equals(user)) {
-                allLinks.remove(id);
-                return link;
-            } else {
-                log.info("Not deleting link {}, user {}", link.toJson());
-                return null;
-            }
-        }
-    }
+
 }

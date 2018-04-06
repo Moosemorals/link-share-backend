@@ -32,12 +32,15 @@ final class Link {
                 throw new IllegalArgumentException("Missing '" + field + "' from JSON");
             }
         }
+
+        AuthManager authManager = AuthManager.getInstance();
+
         // required fields
         this.url = json.getString("url");
         this.id = json.getJsonString("id").getString();
         this.created = json.getJsonNumber("created").longValue();
-        this.from = new User(json.get("from"));
-        this.to = new User(json.get("to"));
+        this.from = authManager.getUserByName(json.getString("from"));
+        this.to = authManager.getUserByName(json.getString("to"));
         // optional fields
         this.title = json.getString("title", null);
         this.favIconURL = json.getString("favIconURL", null);
@@ -52,8 +55,8 @@ final class Link {
                 .add("url", url)
                 .add("id", id)
                 .add("created", created)
-                .add("from", from.toJson())
-                .add("to", to.toJson());
+                .add("from", from.getName())
+                .add("to", to.getName());
 
         if (title != null) {
             json.add("title", title);
@@ -64,6 +67,10 @@ final class Link {
         }
 
         return json.build();
+    }
+
+    boolean isRelated(User u) {
+        return from.equals(u) || to.equals(u);
     }
 
     long getCreated() {

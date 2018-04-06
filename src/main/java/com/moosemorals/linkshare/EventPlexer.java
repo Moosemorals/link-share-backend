@@ -91,8 +91,8 @@ final class EventPlexer {
         synchronized (listeners) {
             log.debug("Sending to {} other(s)", listeners.size());
             for (PlexerListener l : listeners) {
-                if (l.getUser().equals(item.link.getTo())) {
-                    l.onNewLink(item);
+                if (item.link.isRelated(l.getUser())) {
+                    l.onItem(item);
                 }
             }
         }
@@ -100,7 +100,7 @@ final class EventPlexer {
 
     interface PlexerListener {
         User getUser();
-        void onNewLink(QueueItem item);
+        void onItem(QueueItem item);
         void onShutdown();
     }
 

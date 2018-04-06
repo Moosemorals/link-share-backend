@@ -30,7 +30,7 @@ public final class Submit extends HttpServlet {
 
         // Required fields
         String link = req.getParameter("url");
-        User to = authManager.lookupUser(req.getParameter("to"));
+        User to = authManager.getUserByName(req.getParameter("to"));
 
         if (to == null) {
             Globals.sendError(resp, "User '" + req.getParameter("to") + "' not known");

@@ -30,7 +30,7 @@ public final class Backend extends HttpServlet {
             }
 
             @Override
-            public void onNewLink(QueueItem item) {
+            public void onItem(QueueItem item) {
                 synchronized (queue) {
                     queue.addLast(item);
                     queue.notifyAll();

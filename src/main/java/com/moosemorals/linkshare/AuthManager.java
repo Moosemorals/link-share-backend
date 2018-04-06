@@ -13,23 +13,20 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-import java.security.Provider;
 import java.security.SecureRandom;
-import java.security.Security;
 import java.security.spec.InvalidKeySpecException;
 import java.util.*;
 
 final class AuthManager {
 
-    static final int DEFAULT_ITERATIONS = 30 * 1000;
+    private static final int DEFAULT_ITERATIONS = 30 * 1000;
     private static final String FILENAME = "auth.json";
     private static final String PASSWORD_HASH = "PBKDF2WithHmacSHA1";
     private static final int DEFAULT_KEY_LENGTH = 256;
     private static final AuthManager INSTANCE = new AuthManager();
     private static final SecureRandom random = new SecureRandom();
     private static final Logger log = LoggerFactory.getLogger(AuthManager.class);
-    private final Map<String, Credentials> creds = new HashMap<>();
-    private final Map<User, Set<String>> tokens = new HashMap<>();
+    private static final List<User> users = new ArrayList<>();
 
     private AuthManager() {
     }
@@ -93,102 +90,96 @@ final class AuthManager {
     }
 
     User checkAuth(String name, String password) {
-        Credentials c;
-        synchronized (creds) {
-            c = creds.get(name);
-        }
-        if (c == null) {
-            return null;
-        }
-
-        if (checkPassword(c.getSaltAndHash(), password)) {
-            return new User(name);
-        } else {
-            return null;
-        }
+       synchronized (users) {
+           for (User u : users) {
+               if (u.matchesName(name)) {
+                   if (checkPassword(u.getSaltAndHash(), password)) {
+                       return u;
+                   } else {
+                       return null;
+                   }
+               }
+           }
+       }
+       return null;
     }
 
     void saveDatabase(Properties props) throws IOException {
 
-        JsonArrayBuilder json = Json.createArrayBuilder();
-        synchronized (creds) {
-            for (Credentials c : creds.values()) {
-                json.add(c.toJson());
+        JsonArrayBuilder jsonUsersBuilders = Json.createArrayBuilder();
+        synchronized (users) {
+            for (User user : users) {
+                jsonUsersBuilders.add(user.toJson());
             }
         }
-        JsonArray jsonArray = json.build();
+
+        JsonArray jsonUsers = jsonUsersBuilders.build();
 
         File authDatabase = Globals.getFile(props, FILENAME);
-        log.info("Writing {} entries to {}", jsonArray.size(), authDatabase.getAbsolutePath());
+        log.info("Writing {} entries to {}", jsonUsers.size(), authDatabase.getAbsolutePath());
         try (JsonWriter out = Json.createWriter(new FileWriter(authDatabase))) {
-            out.write(jsonArray);
+            out.write(jsonUsers);
         }
     }
 
     void loadDatabase(Properties props) throws IOException {
         File authDatabase = Globals.getFile(props, FILENAME);
-        JsonArray credsArray;
+        JsonArray jsonUsers;
         try (JsonReader in = Json.createReader(new FileReader(authDatabase))) {
-            credsArray = in.readArray();
+            jsonUsers = in.readArray();
         }
-        log.info("Read {} entries from ", credsArray.size(), authDatabase);
-        synchronized (creds) {
-            creds.clear();
-            for (JsonValue v : credsArray) {
-                Credentials c = new Credentials((JsonObject)v);
-                creds.put(c.getName(), c);
+        log.info("Read {} entries from ", jsonUsers.size(), authDatabase);
+        synchronized (users) {
+            users.clear();
+            for (JsonValue v : jsonUsers) {
+                users.add(new User((JsonObject) v));
             }
         }
     }
 
     User checkToken(String token) {
-        synchronized (tokens) {
-            for (Map.Entry<User, Set<String>> entry : tokens.entrySet()) {
-                for (String t : entry.getValue()) {
-                    if (t.equals(token)) {
-                        return entry.getKey();
-                    }
+        synchronized (users) {
+            for (User u : users) {
+                Token t = u.getToken(token);
+                if (t != null) {
+                    return u;
                 }
             }
         }
         return null;
     }
 
-    String createToken(User user) {
-        String token = Globals.generateId();
-        synchronized (tokens) {
-            if (!tokens.containsKey(user)) {
-                tokens.put(user, new HashSet<String>());
-            }
-
-            tokens.get(user).add(token);
-        }
-        return token;
+    Token createToken(User user, String device) {
+        return user.addToken(device);
     }
 
-    void logout(User user, String token) {
-        synchronized (tokens) {
-            if (tokens.containsKey(user)) {
-                if (token != null) {
-                    Set<String> userTokens = tokens.get(user);
-                    userTokens.remove(token);
-                    if (userTokens.isEmpty()) {
-                        tokens.remove(user);
-                    }
-                } else {
-                    tokens.remove(user);
+    void logout(User user, String tokenId) {
+        user.invalidateToken(tokenId);
+    }
+
+    User getUserByName(String name) {
+        synchronized (users) {
+            for (User u : users) {
+                if (u.matchesName(name)) {
+                    return u;
                 }
             }
         }
+        return null;
     }
 
-    User lookupUser(String to) {
-        String userName = to.toLowerCase();
-        synchronized (creds) {
-            if (creds.containsKey(userName)) {
-                return new User(userName);
+    JsonArray getUsers() {
+        JsonArrayBuilder jsonArrayBuilder = Json.createArrayBuilder();
+        synchronized (users) {
+            for (User u : users) {
+                jsonArrayBuilder.add(
+                        Json.createObjectBuilder()
+                                .add("name", u.getName())
+                                .add("devices", u.getDeviceJson())
+                                .build()
+                );
             }
         }
-        return null;
+        return jsonArrayBuilder.build();
     }
 }

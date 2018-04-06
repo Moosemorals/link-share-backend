@@ -33,6 +33,10 @@
         <servlet-name>Submit</servlet-name>
         <servlet-class>com.moosemorals.linkshare.Submit</servlet-class>
     </servlet>
+    <servlet>
+        <servlet-name>Users</servlet-name>
+        <servlet-class>com.moosemorals.linkshare.UserListServlet</servlet-class>
+    </servlet>
 
     <servlet-mapping>
         <servlet-name>Backend</servlet-name>
@@ -54,6 +58,10 @@
     <servlet-mapping>
         <servlet-name>Submit</servlet-name>
         <url-pattern>/submit</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>Users</servlet-name>
+        <url-pattern>/users</url-pattern>
     </servlet-mapping>
 
     <listener>

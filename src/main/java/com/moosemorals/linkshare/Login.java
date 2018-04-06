@@ -9,31 +9,34 @@ import java.io.IOException;
 
 public class Login extends HttpServlet {
 
+    private static final String[] REQUIRED_FIELDS = {"username", "password", "device"};
+
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+
+        for (String field : REQUIRED_FIELDS) {
+            String value = req.getParameter(field);
+            if (value == null || value.isEmpty()) {
+                Globals.sendError(resp, "Missing parameter '" + field + "'");
+                return;
+            }
+        }
+
         String username = req.getParameter("username");
         String password = req.getParameter("password");
-
-        if (username == null || username.isEmpty()) {
-            Globals.sendError(resp, "Missing username");
-            return;
-        }
-
-        if (password == null || password.isEmpty()) {
-            Globals.sendError(resp, "Missing password");
-        }
+        String device = req.getParameter("device");
 
         AuthManager auth = AuthManager.getInstance();
 
         User user = auth.checkAuth(username, password);
         if (user != null) {
             JsonObject json = Json.createObjectBuilder()
-                    .add("user", user.toJson())
-                    .add("token", auth.createToken(user))
+                    .add("user", user.getName())
+                    .add("token", auth.createToken(user, device).getId())
                     .build();
             Globals.sendSuccess(resp, json);
         } else {
-            Globals.sendError(resp, "Login Failed");
+            Globals.sendError(resp, HttpServletResponse.SC_FORBIDDEN,"Login Failed");
         }
     }
 }

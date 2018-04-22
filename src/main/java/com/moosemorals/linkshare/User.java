@@ -53,7 +53,7 @@ final class User {
 
     Token getToken(String token) {
        for (Token t : tokens) {
-           if (t.getId().equals(token)) {
+           if (t.check(token)) {
                return t;
            }
        }
@@ -63,19 +63,19 @@ final class User {
     void invalidateToken(String token) {
         for (Iterator<Token> iterator = tokens.iterator(); iterator.hasNext(); ) {
             Token t = iterator.next();
-            if (t.getId().equals(token)) {
+            if (t.check(token)) {
                 iterator.remove();
             }
         }
     }
 
-    Token addToken(String device) {
+    Token addToken(String device, String id) {
        for (Token t : tokens) {
            if (t.getDevice().equals(device)) {
                return t;
            }
        }
-       Token t = new Token(Globals.generateId(), device);
+       Token t = new Token(id, device);
        tokens.add(t);
        return t;
     }

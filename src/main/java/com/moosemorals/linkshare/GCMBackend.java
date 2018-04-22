@@ -17,7 +17,7 @@ final class GCMBackend {
 
     private static final GCMBackend INSTANCE = new GCMBackend();
 
-    private static final String ACCOUNT_KEY_PATH = "/home/osric/links/accountKey.json";
+    private static final String ACCOUNT_KEY_PATH = "/home/osric/links/googleKey.json";
     private final Logger log = LoggerFactory.getLogger(GCMBackend.class);
     private final SingleThreadExecutor executor = new SingleThreadExecutor();
 

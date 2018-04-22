@@ -32,7 +32,7 @@ public class Login extends HttpServlet {
         if (user != null) {
             JsonObject json = Json.createObjectBuilder()
                     .add("user", user.getName())
-                    .add("token", auth.createToken(user, device).getId())
+                    .add("token", auth.createToken(user, device))
                     .build();
             Globals.sendSuccess(resp, json);
         } else {

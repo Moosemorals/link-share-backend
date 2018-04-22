@@ -19,7 +19,7 @@ import java.util.*;
 
 final class AuthManager {
 
-    private static final int DEFAULT_ITERATIONS = 30 * 1000;
+    private static final int DEFAULT_ITERATIONS = 5 * 1000;
     private static final String FILENAME = "auth.json";
     private static final String PASSWORD_HASH = "PBKDF2WithHmacSHA1";
     private static final int DEFAULT_KEY_LENGTH = 256;
@@ -53,7 +53,7 @@ final class AuthManager {
         return encoder.encodeToString(salt) + ":" + encoder.encodeToString(hash);
     }
 
-    private static boolean checkPassword(String saltAndHash, String given) {
+    static boolean checkPassword(String saltAndHash, String given) {
         Base64 decoder = new Base64();
         String[] parts = saltAndHash.split(":");
 
@@ -149,8 +149,10 @@ final class AuthManager {
         return null;
     }
 
-    Token createToken(User user, String device) {
-        return user.addToken(device);
+    String createToken(User user, String device) {
+        String id = Globals.generateId();
+        user.addToken(device, id);
+        return id;
     }
 
     void logout(User user, String tokenId) {

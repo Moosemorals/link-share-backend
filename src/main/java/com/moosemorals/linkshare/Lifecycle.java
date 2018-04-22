@@ -36,8 +36,8 @@ public final class Lifecycle implements ServletContextListener {
     public void contextInitialized(ServletContextEvent sce) {
         try {
             props.load(getClass().getResourceAsStream("/default.properties"));
-            LinkManager.getInstance().loadLinks(props);
             AuthManager.getInstance().loadDatabase(props);
+            LinkManager.getInstance().loadLinks(props);
             EventPlexer.getInstance().start();
 
             periodicallyThread = new Thread(periodically, "Periodically");
@@ -54,8 +54,8 @@ public final class Lifecycle implements ServletContextListener {
         }
         EventPlexer.getInstance().stop();
         try {
-            AuthManager.getInstance().saveDatabase(props);
             LinkManager.getInstance().saveLinks(props);
+            AuthManager.getInstance().saveDatabase(props);
         } catch (IOException ex) {
             log.error("Shutdown error", ex);
         }

@@ -165,6 +165,7 @@ final class AuthManager {
                 }
             }
         }
+        log.warn("Can't find user for name {}", name);
         return null;
     }
 
@@ -181,5 +182,17 @@ final class AuthManager {
             }
         }
         return jsonArrayBuilder.build();
+    }
+
+    void forAllUsers(EachUser consumer) {
+        synchronized (users) {
+            for (User u : users) {
+                consumer.accept(u);
+            }
+        }
+    }
+
+    interface EachUser {
+        void accept(User u);
     }
 }

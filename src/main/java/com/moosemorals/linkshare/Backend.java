@@ -3,7 +3,6 @@ package com.moosemorals.linkshare;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -17,12 +16,12 @@ public final class Backend extends HttpServlet {
     private final Logger log = LoggerFactory.getLogger(Backend.class);
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
 
-        final User user = (User)req.getAttribute(AuthFilter.USER);
+        final User user = (User) req.getAttribute(AuthFilter.USER);
 
         final Thread servletThread = Thread.currentThread();
-        final LinkedList<QueueItem> queue = new LinkedList<>();
+        final LinkedList<EventPlexer.PlexerQueueItem> queue = new LinkedList<>();
         final EventPlexer.PlexerListener listener = new EventPlexer.PlexerListener() {
             @Override
             public User getUser() {
@@ -30,7 +29,7 @@ public final class Backend extends HttpServlet {
             }
 
             @Override
-            public void onItem(QueueItem item) {
+            public void onItem(EventPlexer.PlexerQueueItem item) {
                 synchronized (queue) {
                     queue.addLast(item);
                     queue.notifyAll();
@@ -51,67 +50,70 @@ public final class Backend extends HttpServlet {
         resp.setContentType("text/event-stream;charset=utf-8");
         resp.setHeader("Access-Control-Allow-Origin", "*");
         resp.setHeader("Connection", "close");
-        PrintWriter out = resp.getWriter();
+        try (PrintWriter out = resp.getWriter()) {
+            write(out, ":\n\n");
 
-        out.write(":\n\n");
-        out.flush();
+            while (!Thread.interrupted()) {
+                try {
+                    EventPlexer.PlexerQueueItem next;
+                    synchronized (queue) {
+                        while (queue.isEmpty()) {
+                            queue.wait(TIMEOUT);
+                        }
 
-        while (!Thread.interrupted()) {
-            try {
-                QueueItem next;
-                synchronized (queue) {
-                    while (queue.isEmpty()) {
-                        queue.wait(TIMEOUT);
+                        if (!queue.isEmpty()) {
+                            next = queue.removeFirst();
+                        } else {
+                            next = null;
+                        }
                     }
 
-                    if (!queue.isEmpty()) {
-                        next = queue.removeFirst();
-                    } else {
-                        next = null;
+                    if (next == null) {
+                        // was a timeout, so just send a keep alive
+                        log.debug("Sending a keep alive");
+                        write(out, ":\n\n");
+                        continue;
                     }
-                }
 
-                if (next == null) {
-                    // was a timeout, so just send a keep alive
-                    log.debug("Sending a keep alive");
-                    out.write(":\n\n");
-                    out.flush();
-                    continue;
-                }
+                    String event = buildEvent(next);
+                    log.debug("{}: Sending event: {}", req.getRemoteAddr(), event);
+                    write(out, event);
 
-                String event = buildEvent(next);
-                log.debug("{}: Sending event: {}", req.getRemoteAddr(), event);
-                out.write(event);
-                out.flush();
-
-                if (out.checkError()) {
-                    log.info("{}: Remote end closed connection", req.getRemoteAddr());
+                    if (out.checkError()) {
+                        log.info("{}: Remote end closed connection", req.getRemoteAddr());
+                        break;
+                    }
+                } catch (InterruptedException e) {
+                    log.info("Closing down");
+                    write(out, "close: closed\n\n");
+                    out.close();
                     break;
                 }
-            } catch (InterruptedException e) {
-                log.info("Closing down");
-                out.write("close: closed\n\n");
-                out.flush();
-                out.close();
-                break;
             }
+        } finally {
+            EventPlexer.getInstance().removeListener(listener);
+            log.debug("{}: No longer connected", req.getRemoteAddr());
         }
 
-        EventPlexer.getInstance().removeListener(listener);
-        log.debug("{}: No longer connected", req.getRemoteAddr());
     }
 
-    private String buildEvent(QueueItem item) {
-        return
-                "event: " +
-                        item.action
-                                .toString()
-                                .toLowerCase() +
-                        "\ndata: " +
-                        item.link
-                                .toJson()
-                                .toString() +
-                        "\n\n";
+    private String buildEvent(EventPlexer.PlexerQueueItem item) {
+        return "event: " +
+                item.action.toString().toLowerCase() +
+                "\ndata: " +
+                item.link.toJson().toString() +
+                "\n\n";
 
+    }
+
+    private void write(PrintWriter out, String msg) throws IOException {
+        out.print(msg);
+        if (out.checkError()) {
+            throw new IOException("Print error (write)");
+        }
+        out.flush();
+        if (out.checkError()) {
+            throw new IOException("Print error (flush)");
+        }
     }
 }

@@ -4,45 +4,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-final class EventPlexer {
-    private final Logger log = LoggerFactory.getLogger(EventPlexer.class);
+final class EventPlexer extends OffThreadHandler {
     private final static EventPlexer INSTANCE = new EventPlexer();
+    private final Logger log = LoggerFactory.getLogger(EventPlexer.class);
+    private final Set<PlexerListener> listeners = new HashSet<>();
+
+    private EventPlexer() {
+
+    }
 
     static EventPlexer getInstance() {
         return INSTANCE;
-    }
-
-    private final LinkedList<QueueItem> queue;
-    private final Set<PlexerListener> listeners = new HashSet<>();
-    private final AtomicBoolean running = new AtomicBoolean(false);
-    private final Runnable queueWatcher = new Runnable() {
-        @Override
-        public void run() {
-            while (running.get() && !Thread.interrupted()) {
-                QueueItem next;
-                synchronized (queue) {
-                    while (queue.isEmpty()) {
-                        try {
-                            queue.wait();
-                        } catch (InterruptedException ex) {
-                            return;
-                        }
-                    }
-                    next = queue.removeFirst();
-                }
-
-                notifyListeners(next);
-            }
-        }
-    };
-    private Thread watcherThread;
-
-    private EventPlexer() {
-        queue = new LinkedList<>();
     }
 
     void addListener(PlexerListener l) {
@@ -59,35 +33,37 @@ final class EventPlexer {
         }
     }
 
-    void start() {
-        if (running.compareAndSet(false, true)) {
-            watcherThread = new Thread(queueWatcher, "watcher");
-            watcherThread.start();
-        }
-    }
 
     void stop() {
-        if (running.compareAndSet(true, false)) {
-            watcherThread.interrupt();
-            watcherThread = null;
-
-            synchronized (listeners) {
-                for (PlexerListener l : listeners) {
-                    l.onShutdown();
-                }
+        super.stop();
+        synchronized (listeners) {
+            for (PlexerListener l : listeners) {
+                l.onShutdown();
             }
         }
     }
 
     void queueLink(Action action, Link link) {
         log.debug("Queuing link {}", link);
-        synchronized (queue) {
-            queue.addLast(new QueueItem(action, link));
-            queue.notifyAll();
-        }
+        super.addToQueue(new PlexerQueueItem(action, link));
     }
 
-    private void notifyListeners(QueueItem item) {
+    protected void handleNext(QueueItem next) {
+        final PlexerQueueItem item = (PlexerQueueItem) next;
+        AuthManager auth = AuthManager.getInstance();
+        final GCMBackend gcm = GCMBackend.getInstance();
+
+        auth.forAllUsers(new AuthManager.EachUser() {
+            @Override
+            public void accept(User u) {
+                if (!u.getPhones().isEmpty()) {
+                    if (item.link.getTo().equals(u)) {
+                        gcm.sendMessage(u, item.action, item.link);
+                    }
+                }
+            }
+        });
+
         synchronized (listeners) {
             log.debug("Sending to {} other(s)", listeners.size());
             for (PlexerListener l : listeners) {
@@ -98,13 +74,25 @@ final class EventPlexer {
         }
     }
 
+    enum Action {
+        CREATED, DELETED
+    }
+
     interface PlexerListener {
         User getUser();
-        void onItem(QueueItem item);
+
+        void onItem(PlexerQueueItem item);
+
         void onShutdown();
     }
 
-    enum Action {
-        CREATED, DELETED
+    final static class PlexerQueueItem extends OffThreadHandler.QueueItem {
+        final EventPlexer.Action action;
+        final Link link;
+
+        PlexerQueueItem(EventPlexer.Action action, Link link) {
+            this.action = action;
+            this.link = link;
+        }
     }
 }

@@ -1,5 +1,8 @@
 package com.moosemorals.linkshare;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
@@ -7,7 +10,6 @@ import javax.json.JsonObjectBuilder;
 final class Link {
 
     private static final String[] REQUIRED_FIELDS = {"id", "url", "created", "from", "to"};
-
     private final String url;
     private final String id;
     private final String title;
@@ -54,9 +56,19 @@ final class Link {
         JsonObjectBuilder json = Json.createObjectBuilder()
                 .add("url", url)
                 .add("id", id)
-                .add("created", created)
-                .add("from", from.getName())
-                .add("to", to.getName());
+                .add("created", created);
+
+        if (to != null) {
+            json.add("to", to.getName());
+        } else {
+            json.addNull("to");
+        }
+
+        if (from != null) {
+            json.add("from", from.getName());
+        } else {
+            json.addNull("from");
+        }
 
         if (title != null) {
             json.add("title", title);

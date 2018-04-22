@@ -49,6 +49,16 @@ final class LinkManager {
 
         synchronized (allLinks) {
             for (Link l : allLinks.values()) {
+
+                if (l.getTo() == null) {
+                    log.warn("Missing to for link {}", l.toJson());
+                    continue;
+                }
+                if (l.getFrom() == null) {
+                    log.warn("Missing from for link {}", l.toJson());
+                    continue;
+                }
+
                 if (l.getTo().equals(user) || l.getFrom().equals(user)) {
                     result.add(l);
                 }

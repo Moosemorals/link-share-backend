@@ -1,9 +1,7 @@
 package com.moosemorals.linkshare;
 
 import javax.json.*;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
 
 final class User {
     private static final String[] REQUIRED_FIELDS = {"name","creds","tokens"};
@@ -11,6 +9,7 @@ final class User {
     private final String name;
     private final Credentials creds;
     private final Set<Token> tokens;
+    private final Set<String> phones;
 
    User(JsonObject json) {
         for (String field : REQUIRED_FIELDS) {
@@ -21,11 +20,19 @@ final class User {
 
         name = json.getString("name");
         creds = new Credentials(json.getJsonObject("creds"));
-        tokens = new HashSet<>();
 
+        tokens = new HashSet<>();
         for (JsonValue j : json.getJsonArray("tokens")) {
             JsonObject jsonToken = (JsonObject)j;
             tokens.add(new Token(jsonToken));
+        }
+
+        phones = new HashSet<>();
+        if (json.containsKey("phones")) {
+            for (JsonValue j : json.getJsonArray("phones")) {
+                JsonString t = (JsonString)j;
+                phones.add(t.getString());
+            }
         }
     }
 
@@ -73,6 +80,14 @@ final class User {
        return t;
     }
 
+    void addPhone(String phone) {
+       phones.add(phone);
+    }
+
+    Collection<String> getPhones() {
+       return Collections.unmodifiableSet(phones);
+    }
+
     JsonArray getDeviceJson() {
        JsonArrayBuilder jsonArrayBuilder = Json.createArrayBuilder();
        for (Token t : tokens) {
@@ -87,10 +102,16 @@ final class User {
             jsonTokens.add(t.toJson());
         }
 
+        JsonArrayBuilder jsonPhones = Json.createArrayBuilder();
+        for (String t : phones) {
+            jsonPhones.add(t);
+        }
+
         return Json.createObjectBuilder()
                 .add("name", name)
                 .add("creds", creds.toJson())
                 .add("tokens", jsonTokens.build())
+                .add("phones", jsonPhones.build())
                 .build();
     }
 }
